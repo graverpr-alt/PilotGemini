@@ -1,0 +1,1897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PILOT</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e0f;
+    --surface: #161618;
+    --surface2: #1e1e21;
+    --border: #2a2a2e;
+    --accent: #c8f060;
+    --accent2: #60d0f0;
+    --warn: #f0a060;
+    --danger: #f06060;
+    --text: #e8e8ec;
+    --text2: #8888a0;
+    --text3: #555568;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: 4px;
+    color: var(--accent);
+  }
+
+  .logo span {
+    color: var(--text3);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    display: block;
+    font-family: 'DM Mono', monospace;
+  }
+
+  nav {
+    display: flex;
+    gap: 4px;
+  }
+
+  .nav-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .nav-btn:hover { color: var(--text); border-color: var(--text3); }
+  .nav-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 500; }
+
+  /* PILOT STATUS */
+  .pilot-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  .pilot-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text3);
+    transition: all 0.3s;
+  }
+
+  .pilot-dot.listening { background: var(--accent); box-shadow: 0 0 12px var(--accent); animation: pulse 1.5s infinite; }
+  .pilot-dot.speaking { background: var(--accent2); box-shadow: 0 0 12px var(--accent2); animation: pulse 0.8s infinite; }
+  .pilot-dot.thinking { background: var(--warn); animation: pulse 0.5s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  /* VIEWS */
+  .view { display: none; padding: 32px; }
+  .view.active { display: block; }
+
+  /* CALENDAR VIEW */
+  .cal-grid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .cal-month-header {
+    font-family: 'Syne', sans-serif;
+    font-size: 48px;
+    font-weight: 800;
+    color: var(--text3);
+    margin-bottom: 24px;
+    line-height: 1;
+  }
+
+  .cal-month-header strong { color: var(--text); }
+
+  .calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+
+  .cal-day-label {
+    text-align: center;
+    font-size: 10px;
+    color: var(--text3);
+    padding: 8px 0;
+    letter-spacing: 1px;
+  }
+
+  .cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 4px;
+    position: relative;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+    gap: 3px;
+  }
+
+  .cal-day:hover { background: var(--surface2); }
+  .cal-day.today { border-color: var(--accent); color: var(--accent); }
+  .cal-day.has-task::after {
+    content: '';
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .cal-day.empty { cursor: default; }
+  .cal-day.past { color: var(--text3); }
+  .cal-day.selected-day { background: var(--surface2); border-color: var(--accent2); color: var(--accent2); }
+
+  /* UPCOMING TASKS SIDEBAR */
+  .upcoming-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .task-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .task-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+  }
+
+  .task-card.warn::before { background: var(--warn); }
+  .task-card.urgent::before { background: var(--danger); }
+
+  .task-card:hover { background: var(--surface2); border-color: var(--text3); }
+
+  .task-card-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .task-card-meta {
+    font-size: 11px;
+    color: var(--text2);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .task-card-date { color: var(--accent); }
+  .task-card-date.warn { color: var(--warn); }
+  .task-card-date.urgent { color: var(--danger); }
+
+  .add-task-btn {
+    width: 100%;
+    background: none;
+    border: 1px dashed var(--border);
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 8px;
+    letter-spacing: 1px;
+  }
+
+  .add-task-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 32px;
+    width: 480px;
+    max-width: 90vw;
+  }
+
+  .modal h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 24px;
+  }
+
+  .field {
+    margin-bottom: 16px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .field input, .field select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 10px 14px;
+    outline: none;
+  }
+
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .btn-primary {
+    flex: 1;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-primary:hover { opacity: 0.85; }
+
+  .btn-secondary {
+    flex: 1;
+    background: none;
+    color: var(--text2);
+    border: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-secondary:hover { border-color: var(--text3); color: var(--text); }
+
+  /* TASK LIST VIEW */
+  .tasks-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .tasks-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+  }
+
+  .tasks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  .task-tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .task-tile:hover {
+    background: var(--surface2);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .task-tile-tag {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .task-tile-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    line-height: 1.2;
+  }
+
+  .task-tile-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .chip {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 2px;
+    letter-spacing: 0.5px;
+  }
+
+  .chip.green { background: rgba(200,240,96,0.12); color: var(--accent); }
+  .chip.blue { background: rgba(96,208,240,0.12); color: var(--accent2); }
+  .chip.orange { background: rgba(240,160,96,0.12); color: var(--warn); }
+  .chip.red { background: rgba(240,96,96,0.12); color: var(--danger); }
+
+  .task-tile-date {
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  .task-tile-date strong { color: var(--text); }
+
+  .change-badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    background: var(--warn);
+    color: var(--bg);
+    padding: 3px 8px;
+    font-weight: 500;
+  }
+
+  /* DETAIL VIEW */
+  .detail-back {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--text3);
+    cursor: pointer;
+    margin-bottom: 32px;
+    width: fit-content;
+    transition: color 0.15s;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .detail-back:hover { color: var(--accent); }
+
+  .detail-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: start;
+    margin-bottom: 40px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .detail-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+
+  .detail-subtitle {
+    font-size: 13px;
+    color: var(--text2);
+    max-width: 500px;
+    line-height: 1.7;
+  }
+
+  .detail-meta-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px;
+    min-width: 220px;
+  }
+
+  .detail-meta-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 16px;
+  }
+
+  .detail-meta-row:last-child { border-bottom: none; }
+  .detail-meta-label { color: var(--text3); }
+  .detail-meta-val { color: var(--text); text-align: right; }
+  .detail-meta-val.green { color: var(--accent); }
+  .detail-meta-val.orange { color: var(--warn); }
+  .detail-meta-val.red { color: var(--danger); }
+
+  .detail-sections {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .detail-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px;
+  }
+
+  .detail-section.full { grid-column: 1 / -1; }
+
+  .section-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* STEPS */
+  .step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+  }
+
+  .step-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text3);
+    min-width: 32px;
+    line-height: 1;
+  }
+
+  .step-body {}
+
+  .step-title {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+
+  .step-desc {
+    font-size: 11px;
+    color: var(--text2);
+    line-height: 1.7;
+  }
+
+  .step-diff {
+    display: inline-block;
+    font-size: 9px;
+    padding: 2px 8px;
+    margin-top: 6px;
+    letter-spacing: 1px;
+  }
+
+  .step-diff.easy { background: rgba(200,240,96,0.12); color: var(--accent); }
+  .step-diff.medium { background: rgba(240,160,96,0.12); color: var(--warn); }
+  .step-diff.hard { background: rgba(240,96,96,0.12); color: var(--danger); }
+
+  /* DOCS CHECKLIST */
+  .doc-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text2);
+    transition: color 0.15s;
+  }
+
+  .doc-item:last-child { border-bottom: none; }
+  .doc-item:hover { color: var(--text); }
+
+  .doc-check {
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    transition: all 0.15s;
+  }
+
+  .doc-item.checked .doc-check { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+  .doc-item.checked { color: var(--text3); text-decoration: line-through; }
+
+  /* CHANGE ALERT */
+  .change-alert {
+    background: rgba(240,160,96,0.08);
+    border: 1px solid rgba(240,160,96,0.3);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+  }
+
+  .change-alert-header {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--warn);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .change-alert-body {
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  /* LOCATIONS */
+  .location-item {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+
+  .location-item:last-child { border-bottom: none; }
+
+  .location-name { color: var(--text); margin-bottom: 4px; font-weight: 500; }
+  .location-addr { color: var(--text3); margin-bottom: 6px; font-size: 11px; }
+  .location-status {
+    font-size: 10px;
+    letter-spacing: 1px;
+    display: inline-block;
+    padding: 2px 8px;
+  }
+  .location-status.open { background: rgba(200,240,96,0.12); color: var(--accent); }
+  .location-status.busy { background: rgba(240,160,96,0.12); color: var(--warn); }
+  .location-status.closed { background: rgba(240,96,96,0.12); color: var(--danger); }
+
+  /* BYPASS */
+  .bypass-item {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.7;
+  }
+
+  .bypass-item:last-child { border-bottom: none; }
+  .bypass-item strong { color: var(--accent2); }
+
+  /* FAILURE GUIDANCE */
+  .failure-step {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.7;
+  }
+
+  .failure-arrow { color: var(--danger); flex-shrink: 0; }
+
+  /* HISTORY */
+  .history-item {
+    display: flex;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    align-items: flex-start;
+  }
+
+  .history-item:last-child { border-bottom: none; }
+  .history-date { color: var(--text3); min-width: 80px; }
+  .history-note { color: var(--text2); line-height: 1.6; }
+  .history-outcome { margin-left: auto; flex-shrink: 0; }
+  .history-outcome.success { color: var(--accent); }
+  .history-outcome.fail { color: var(--danger); }
+
+  /* AI VOICE PANEL */
+  .pilot-panel {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 150;
+  }
+
+  .pilot-bubble {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+    max-width: 340px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.7;
+    display: none;
+    animation: slideUp 0.2s ease;
+  }
+
+  .pilot-bubble.show { display: block; }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .pilot-bubble-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .pilot-mic {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text2);
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+  }
+
+  .pilot-mic:hover { border-color: var(--accent); color: var(--accent); }
+  .pilot-mic.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+  /* TRANSCRIPT */
+  .transcript-box {
+    position: fixed;
+    bottom: 100px;
+    right: 24px;
+    background: rgba(14,14,15,0.95);
+    border: 1px solid var(--border);
+    padding: 12px 16px;
+    font-size: 11px;
+    color: var(--text3);
+    max-width: 300px;
+    display: none;
+    z-index: 149;
+  }
+
+  .transcript-box.show { display: block; }
+
+  /* AI TASK SEARCH */
+  .ai-search-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .ai-search-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 12px 16px;
+    outline: none;
+  }
+
+  .ai-search-input:focus { border-color: var(--accent); }
+  .ai-search-input::placeholder { color: var(--text3); }
+
+  .ai-search-btn {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 1px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .ai-search-btn:hover { opacity: 0.85; }
+
+  .ai-result-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px;
+    display: none;
+    margin-bottom: 24px;
+  }
+
+  .ai-result-box.show { display: block; }
+  .ai-result-box .ai-loading { color: var(--text3); font-size: 12px; animation: blink 1s infinite; }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .ai-result-content { font-size: 13px; color: var(--text); line-height: 1.8; white-space: pre-wrap; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  /* TAG */
+  .today-available {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .today-dot { width: 6px; height: 6px; border-radius: 50%; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    PILOT
+    <span>your process navigator</span>
+  </div>
+  <nav>
+    <button class="nav-btn active" onclick="showView('calendar')">Calendar</button>
+    <button class="nav-btn" onclick="showView('tasks')">Tasks</button>
+    <button class="nav-btn" onclick="showView('detail')" id="detail-nav" style="display:none">Detail</button>
+  </nav>
+  <div class="pilot-status">
+    <div class="pilot-dot" id="pilot-dot"></div>
+    <span id="pilot-label">say "hey pilot"</span>
+  </div>
+</header>
+
+<!-- CALENDAR VIEW -->
+<div class="view active" id="view-calendar">
+  <div class="cal-grid">
+    <div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px">
+        <div class="cal-month-header" id="cal-month-label" style="margin-bottom:0">Loading...</div>
+        <div style="display:flex;gap:8px;padding-bottom:8px">
+          <button class="btn-secondary" style="padding:8px 16px;font-size:16px;line-height:1" onclick="changeMonth(-1)">&#8592;</button>
+          <button class="btn-secondary" style="padding:8px 16px;font-size:16px;line-height:1" onclick="changeMonth(1)">&#8594;</button>
+        </div>
+      </div>
+      <div class="calendar" id="calendar-grid"></div>
+    </div>
+    <div>
+      <div class="upcoming-label" id="sidebar-label">Upcoming Tasks</div>
+      <div id="upcoming-list"></div>
+      <button class="add-task-btn" id="add-task-sidebar-btn" onclick="openAddModal()">+ add task</button>
+    </div>
+  </div>
+</div>
+
+<!-- TASKS VIEW -->
+<div class="view" id="view-tasks">
+  <div class="tasks-header">
+    <div class="tasks-title">All Tasks</div>
+    <button class="add-task-btn" style="width:auto;padding:10px 20px;" onclick="openAddModal()">+ add task</button>
+  </div>
+  <div class="ai-search-bar">
+    <input class="ai-search-input" id="ai-search-input" placeholder="Ask PILOT about any task, process, or facility..." onkeydown="if(event.key==='Enter') aiSearch()">
+    <button class="ai-search-btn" onclick="aiSearch()">ASK PILOT</button>
+  </div>
+  <div class="ai-result-box" id="ai-result-box">
+    <div class="section-label">PILOT RESPONSE</div>
+    <div id="ai-result-content"></div>
+  </div>
+  <div class="tasks-grid" id="tasks-grid"></div>
+</div>
+
+<!-- DETAIL VIEW -->
+<div class="view" id="view-detail">
+  <div class="detail-back" onclick="showView('tasks')">&#8592; back to tasks</div>
+  <div id="detail-content"></div>
+</div>
+
+<!-- ADD TASK MODAL -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <h2>Add Task</h2>
+    <div class="field">
+      <label>Task Name</label>
+      <input type="text" id="new-task-name" placeholder="e.g. Ration Collection">
+    </div>
+    <div class="field">
+      <label>Due Date</label>
+      <input type="date" id="new-task-date">
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <select id="new-task-cat">
+        <option>Government</option>
+        <option>Utility</option>
+        <option>Transport</option>
+        <option>Banking</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeAddModal()">Cancel</button>
+      <button class="btn-primary" onclick="addTask()">Add Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- PILOT PANEL -->
+<div class="pilot-panel">
+  <div class="pilot-bubble" id="pilot-bubble">
+    <div class="pilot-bubble-label">PILOT</div>
+    <div id="pilot-bubble-text"></div>
+  </div>
+  <button class="pilot-mic" id="pilot-mic-btn" onclick="toggleVoice()">🎙</button>
+</div>
+
+<!-- Tooltip rendered outside pilot-panel so it never intercepts clicks -->
+<div id="mic-tooltip" style="position:fixed;bottom:88px;right:24px;background:var(--surface);border:1px solid var(--border);padding:10px 14px;font-size:10px;color:var(--text2);white-space:nowrap;letter-spacing:0.5px;display:none;text-align:left;line-height:1.8;z-index:148;pointer-events:none">
+  <div style="color:var(--accent);font-size:9px;letter-spacing:2px;margin-bottom:6px">HEY PILOT — you can say:</div>
+  "what tasks do I have this week?"<br>
+  "what documents do I need for ration?"<br>
+  "what changed in the LPG process?"<br>
+  "add electricity bill on 23rd May"<br>
+  "open calendar" / "open tasks"
+</div>
+
+<div class="transcript-box" id="transcript-box"></div>
+
+<script>
+// ====== DATA ======
+const TASK_DATA = {
+  "ration": {
+    id: "ration",
+    name: "Ration Collection",
+    tag: "Government · PDS",
+    category: "Government",
+    description: "Monthly collection of subsidised food grains from your designated Fair Price Shop under the Public Distribution System.",
+    todayAvailable: true,
+    recentChange: {
+      hasChange: true,
+      summary: "One Nation One Ration Card (ONORC) now active across all states.",
+      detail: "You no longer need to visit your home district's FPS. You can collect ration from any FPS in any state using your Aadhaar. This requires biometric authentication at the new location.",
+      actionNeeded: "Carry Aadhaar card. Ensure your mobile number is linked to Aadhaar for OTP-based authentication if biometric fails."
+    },
+    steps: [
+      { title: "Check monthly quota", desc: "Visit mera.nic.in or your state PDS portal to check your current month's entitlement — quantity of rice, wheat, and other items.", diff: "easy" },
+      { title: "Visit Fair Price Shop", desc: "Go to your designated FPS on the allotted date. Check your ration card for the date range assigned to your household.", diff: "easy" },
+      { title: "Biometric authentication", desc: "Your fingerprint or iris scan is matched via Aadhaar. At least one member of the household must authenticate.", diff: "medium" },
+      { title: "Collect items and get receipt", desc: "Receive your grain allocation. Insist on a printed receipt or SMS confirmation. Check weights before leaving.", diff: "easy" }
+    ],
+    docs: ["Ration Card (original)", "Aadhaar Card (any member)", "Mobile linked to Aadhaar (for OTP fallback)"],
+    locations: [
+      { name: "Ramlal Fair Price Shop", addr: "Sector 14, near main market", status: "open" },
+      { name: "Govt FPS No. 42", addr: "Colony B, bus stop junction", status: "busy" },
+      { name: "Annapurna FPS", addr: "Ward 7, temple road", status: "open" }
+    ],
+    bypasses: [
+      { label: "ONORC", desc: "Under One Nation One Ration Card, collect from any FPS in India — not just your assigned one. Useful if you've relocated." },
+      { label: "Proxy collection", desc: "Another household member can collect on your behalf using their own Aadhaar for authentication." },
+      { label: "Doorstep delivery", desc: "Several states now offer home delivery via state-run apps. Check your state's Food & Civil Supplies app." }
+    ],
+    failure: [
+      "Biometric mismatch — Request OTP-based verification using mobile linked to Aadhaar. This is a legal fallback.",
+      "FPS closed — Check mera.nic.in for alternative nearby shops under ONORC.",
+      "Quota not updated — Contact your local Food Supply Officer or toll-free 1967.",
+      "Still stuck — File grievance at pgportal.gov.in or your state's PDS grievance portal."
+    ],
+    history: []
+  },
+
+  "lpg": {
+    id: "lpg",
+    name: "LPG Cylinder Booking",
+    tag: "Utility · Indane / HP / Bharat",
+    category: "Utility",
+    description: "Book subsidised LPG refill cylinders from your registered gas distributor.",
+    todayAvailable: true,
+    recentChange: {
+      hasChange: false,
+      summary: null,
+      detail: null,
+      actionNeeded: null
+    },
+    steps: [
+      { title: "Book via app or IVR", desc: "Use your distributor's app (IndianOil One, HP Gas, Bharat Gas app) or call the IVR number printed on your cylinder — typically 7715012345 for Indane.", diff: "easy" },
+      { title: "Confirm booking SMS", desc: "You'll receive an SMS with booking ID and expected delivery window. Save this.", diff: "easy" },
+      { title: "Cylinder delivery", desc: "Delivery arrives within 2–5 working days. Have cash or UPI ready. Do not accept without safety seal intact.", diff: "easy" },
+      { title: "Verify and sign", desc: "Check cylinder weight on the delivery receipt. Sign after receiving. Ask for the printed receipt.", diff: "medium" }
+    ],
+    docs: ["LPG consumer number (on passbook or cylinder)", "Registered mobile number", "Aadhaar (for new KYC if asked)"],
+    locations: [
+      { name: "Your registered distributor", addr: "Check consumer passbook for address", status: "open" },
+      { name: "Book online", addr: "mylpg.in or distributor app", status: "open" }
+    ],
+    bypasses: [
+      { label: "Emergency booking", desc: "Some distributors allow emergency quota booking outside the normal cycle. Call distributor directly." },
+      { label: "Walk-in booking", desc: "You can walk into your distributor office to book in person if app or IVR fails." },
+      { label: "Porting distributor", desc: "If your current distributor is consistently delayed, you can apply to port to another under the same company." }
+    ],
+    failure: [
+      "Booking not confirmed — Call distributor directly with consumer number.",
+      "Delivery delayed beyond 7 days — Lodge complaint on pgportal.gov.in or call 1800-233-3555.",
+      "Cylinder rejected at delivery — Do not accept damaged or unsealed cylinders. Report to distributor immediately.",
+      "DBTL subsidy not received — Check bank linked to Aadhaar. Visit distributor if it's been more than 15 days."
+    ],
+    history: []
+  },
+
+  "aadhaar": {
+    id: "aadhaar",
+    name: "Aadhaar Update",
+    tag: "Government · UIDAI",
+    category: "Government",
+    description: "Update address, mobile number, date of birth, or other details on your Aadhaar card.",
+    todayAvailable: true,
+    recentChange: {
+      hasChange: true,
+      summary: "Free online Aadhaar address update extended. Also, face authentication now available as biometric fallback.",
+      detail: "UIDAI now allows free address updates via myaadhaar.uidai.gov.in without visiting an enrolment centre. This was previously a paid service. Face authentication using the mAadhaar app is now accepted at some service points as an alternative to fingerprint.",
+      actionNeeded: "For address update only — use the online portal. For name, DOB, or gender changes, you still need to visit an enrolment centre with original documents."
+    },
+    steps: [
+      { title: "Determine what to update", desc: "Address can be done online. Name, DOB, gender, biometrics need physical visit to an enrolment centre.", diff: "easy" },
+      { title: "Online: Visit myaadhaar.uidai.gov.in", desc: "Login with Aadhaar number + OTP. Select 'Update Address' or other available online fields. Upload supporting document.", diff: "medium" },
+      { title: "Physical: Book appointment", desc: "Go to uidai.gov.in > Book Appointment. Select nearby centre. Carry original documents.", diff: "medium" },
+      { title: "Visit centre and authenticate", desc: "Biometric verification at the centre. Receive acknowledgement slip with Update Request Number (URN).", diff: "hard" },
+      { title: "Track and download", desc: "Track URN at uidai.gov.in. Download updated e-Aadhaar after 90 days if physical card not received.", diff: "easy" }
+    ],
+    docs: ["Current Aadhaar number", "Proof of address (utility bill / bank passbook / rent agreement)", "Proof of DOB if updating (birth cert / school cert)", "Mobile linked to Aadhaar for OTP"],
+    locations: [
+      { name: "Online portal", addr: "myaadhaar.uidai.gov.in", status: "open" },
+      { name: "Post Office Aadhaar Centres", addr: "Most head post offices — check uidai.gov.in", status: "open" },
+      { name: "Bank Aadhaar Kiosks", addr: "SBI, Axis, HDFC selected branches", status: "busy" }
+    ],
+    bypasses: [
+      { label: "mAadhaar App", desc: "Download mAadhaar to carry virtual Aadhaar. Accepted at most places in lieu of physical card." },
+      { label: "e-Aadhaar", desc: "Download password-protected PDF from uidai.gov.in — accepted everywhere as valid proof." },
+      { label: "Virtual ID (VID)", desc: "Use a 16-digit VID instead of your actual Aadhaar number for privacy at verification points." }
+    ],
+    failure: [
+      "OTP not received — Ensure mobile number registered with Aadhaar is active. Use TOTP via mAadhaar app instead.",
+      "Documents rejected online — Check the accepted document list at uidai.gov.in/update-aadhaar.html.",
+      "Biometric mismatch at centre — Request face authentication or officer-assisted verification.",
+      "Update pending too long — Track URN, or call 1947 (UIDAI helpline) or email help@uidai.gov.in."
+    ],
+    history: []
+  },
+
+  "water": {
+    id: "water",
+    name: "Water Bill Payment",
+    tag: "Utility · Municipal",
+    category: "Utility",
+    description: "Pay your municipal water supply bill to avoid service interruption.",
+    todayAvailable: true,
+    recentChange: {
+      hasChange: false,
+      summary: null,
+      detail: null,
+      actionNeeded: null
+    },
+    steps: [
+      { title: "Find your consumer number", desc: "On your previous bill or on the water meter. This is your unique ID for payment.", diff: "easy" },
+      { title: "Choose payment channel", desc: "Online via your municipality's portal, or via Bharat Bill Payment System on PhonePe/GPay/Paytm, or walk into the municipal office.", diff: "easy" },
+      { title: "Enter details and pay", desc: "Enter consumer number, verify amount, pay via UPI/card/cash. Download receipt immediately.", diff: "easy" },
+      { title: "Save receipt", desc: "Keep the payment receipt for at least 3 months in case of billing disputes.", diff: "easy" }
+    ],
+    docs: ["Consumer number (on bill or meter)", "Previous bill (for reference)", "Mobile / bank account for UPI"],
+    locations: [
+      { name: "Municipal office water desk", addr: "Main municipal building, ground floor", status: "open" },
+      { name: "Online via BBPS", addr: "PhonePe, GPay, Paytm — Bharat Bill Payment", status: "open" },
+      { name: "Bank payment kiosks", addr: "Any nationalised bank branch", status: "open" }
+    ],
+    bypasses: [
+      { label: "PhonePe / GPay BBPS", desc: "Pay from home via any UPI app. Search 'Water' under utilities, select your municipality." },
+      { label: "Autopay mandate", desc: "Set up NACH autopay through your bank to never miss a bill." },
+      { label: "Common Service Centres", desc: "Visit a CSC (Jan Seva Kendra) if you don't have internet access — they pay on your behalf for a small fee." }
+    ],
+    failure: [
+      "Payment showing pending — Wait 24 hours. If not reflected, contact municipal billing office with transaction ID.",
+      "Wrong amount billed — Visit billing office with copy of meter reading. Submit a written complaint.",
+      "Connection cut despite payment — Carry payment receipt to municipal office. Reconnection must happen within 24 hours.",
+      "Portal not working — Use BBPS through any UPI app or visit municipal office directly."
+    ],
+    history: []
+  },
+
+  "railway": {
+    id: "railway",
+    name: "Railway Ticket Booking",
+    tag: "Transport · IRCTC",
+    category: "Transport",
+    description: "Book reserved railway tickets for travel across India via IRCTC.",
+    todayAvailable: true,
+    recentChange: {
+      hasChange: true,
+      summary: "IRCTC next-generation booking site live. OTP login now mandatory. Tatkal quota times changed.",
+      detail: "IRCTC's new website (next.irctc.co.in) is the primary booking platform. The old site redirects here. OTP-based login is now mandatory — password-only login removed. Tatkal booking for AC classes opens at 10:00 AM and for non-AC at 11:00 AM, one day before travel.",
+      actionNeeded: "Ensure your IRCTC account mobile number is active and receiving OTPs. Log in using the new URL. Update account if your phone number has changed."
+    },
+    steps: [
+      { title: "Login to IRCTC", desc: "Go to next.irctc.co.in. Enter username + OTP sent to registered mobile. Do not use third-party booking sites unless they use IRCTC API.", diff: "easy" },
+      { title: "Search train and select", desc: "Enter source, destination, date, class. Check availability across all available trains. Note — 'WL' means waitlist, 'RAC' means you share a berth initially.", diff: "medium" },
+      { title: "Enter passenger details", desc: "Add all passengers. For seniors, select senior citizen concession if eligible. Double-check names match ID proof.", diff: "medium" },
+      { title: "Pay and download ticket", desc: "Pay via UPI, card, or net banking. Download e-ticket immediately. PNR number is your tracking ID.", diff: "easy" }
+    ],
+    docs: ["IRCTC account login", "Mobile for OTP", "Passenger ID proof (Aadhaar/PAN) for checking", "UPI or card for payment"],
+    locations: [
+      { name: "IRCTC website", addr: "next.irctc.co.in", status: "open" },
+      { name: "IRCTC app", addr: "Google Play / App Store", status: "open" },
+      { name: "Railway reservation counter", addr: "Nearest major railway station", status: "open" },
+      { name: "Authorised travel agents", addr: "Any IRCTC-authorised agent", status: "busy" }
+    ],
+    bypasses: [
+      { label: "Tatkal quota", desc: "Book Tatkal tickets one day before travel for guaranteed reservation. Higher price but no waitlist." },
+      { label: "Current booking", desc: "For same-day travel, 'current booking' counters at stations open 30 minutes before departure." },
+      { label: "Alternative train same route", desc: "If one train is full, check paytrain.irctc.co.in for alternate trains on the same day." },
+      { label: "Tourist Quota", desc: "Tourist quota seats are released to general booking 24 hours before departure — keeps some seats available." }
+    ],
+    failure: [
+      "Payment deducted but no ticket — Check 'Booked Ticket History'. If not showing, wait 30 minutes then check bank. Refund automatic within 7 days.",
+      "PNR in waitlist — Monitor status at pnr.indianrail.gov.in. Confirmation happens up to charting time (4 hours before departure).",
+      "Login OTP not received — Check if IRCTC account number is correct. Use 'Forgot Password' to update number.",
+      "Ticket cancelled — File TDR (Ticket Deposit Receipt) on IRCTC within prescribed time for refund."
+    ],
+    history: []
+  }
+};
+
+let userTasks = [
+  { id: "t1", name: "Ration Collection", date: "2026-05-05", category: "Government", dataKey: "ration" },
+  { id: "t2", name: "LPG Cylinder Booking", date: "2026-05-12", category: "Utility", dataKey: "lpg" },
+  { id: "t3", name: "Aadhaar Address Update", date: "2026-05-20", category: "Government", dataKey: "aadhaar" },
+  { id: "t4", name: "Water Bill Payment", date: "2026-05-08", category: "Utility", dataKey: "water" },
+  { id: "t5", name: "Train Ticket — Mumbai", date: "2026-05-15", category: "Transport", dataKey: "railway" }
+];
+
+let currentDetailTask = null;
+let calViewYear = new Date().getFullYear();
+let calViewMonth = new Date().getMonth();
+let selectedCalDay = null;
+
+// ====== VIEW SWITCHING ======
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  if (name === 'calendar') document.querySelector('.nav-btn:nth-child(1)').classList.add('active');
+  if (name === 'tasks') document.querySelector('.nav-btn:nth-child(2)').classList.add('active');
+  if (name === 'detail') document.querySelector('.nav-btn:nth-child(3)').classList.add('active');
+  if (name === 'calendar') renderCalendar();
+  if (name === 'tasks') renderTasksGrid();
+  document.getElementById('detail-nav').style.display = name === 'detail' ? 'block' : 'none';
+}
+
+// ====== CALENDAR ======
+function changeMonth(dir) {
+  calViewMonth += dir;
+  if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
+  if (calViewMonth < 0)  { calViewMonth = 11; calViewYear--; }
+  selectedCalDay = null;
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const now = new Date();
+  const year = calViewYear;
+  const month = calViewMonth;
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const dayNames = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
+
+  document.getElementById('cal-month-label').innerHTML = `${monthNames[month].toUpperCase()}<br><strong>${year}</strong>`;
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayDate = now.getDate();
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
+
+  // Map tasks by day for this month
+  const taskDays = {};
+  userTasks.forEach(t => {
+    const d = new Date(t.date + 'T00:00:00');
+    if (d.getFullYear() === year && d.getMonth() === month) {
+      if (!taskDays[d.getDate()]) taskDays[d.getDate()] = [];
+      taskDays[d.getDate()].push(t);
+    }
+  });
+
+  let html = dayNames.map(d => `<div class="cal-day-label">${d}</div>`).join('');
+  for (let i = 0; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isToday = isCurrentMonth && d === todayDate;
+    const hasTask = taskDays[d] && taskDays[d].length > 0;
+    const isPast = isCurrentMonth && d < todayDate;
+    const isSelected = selectedCalDay === d;
+    html += `<div class="cal-day ${isToday ? 'today' : ''} ${hasTask ? 'has-task' : ''} ${isPast && !isToday ? 'past' : ''} ${isSelected ? 'selected-day' : ''}" onclick="selectCalDay(${d})">${d}</div>`;
+  }
+
+  document.getElementById('calendar-grid').innerHTML = html;
+  renderSidebar();
+}
+
+function selectCalDay(day) {
+  selectedCalDay = selectedCalDay === day ? null : day;
+  renderCalendar();
+}
+
+function renderSidebar() {
+  const now = new Date();
+  const ul = document.getElementById('upcoming-list');
+  const label = document.getElementById('sidebar-label');
+  const addBtn = document.getElementById('add-task-sidebar-btn');
+
+  if (selectedCalDay !== null) {
+    // Show tasks for this specific day
+    const dateStr = `${calViewYear}-${String(calViewMonth+1).padStart(2,'0')}-${String(selectedCalDay).padStart(2,'0')}`;
+    const dayTasks = userTasks.filter(t => t.date === dateStr);
+    const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    label.textContent = `${selectedCalDay} ${monthNames[calViewMonth]} ${calViewYear}`;
+
+    if (dayTasks.length === 0) {
+      ul.innerHTML = `<div style="color:var(--text3);font-size:12px;padding:16px 0;border:1px dashed var(--border);text-align:center">No tasks on this day</div>`;
+    } else {
+      ul.innerHTML = dayTasks.map(t => {
+        const data = TASK_DATA[t.dataKey];
+        return `<div class="task-card" onclick="openDetail('${t.dataKey || 'search:' + t.name}')">
+          ${data?.recentChange?.hasChange ? '<div style="font-size:9px;color:var(--warn);letter-spacing:1px;margin-bottom:6px">⚠ UPDATED</div>' : ''}
+          <div class="task-card-name">${t.name}</div>
+          <div class="task-card-meta">
+            <span>${t.category}</span>
+            <span class="task-card-date" style="color:var(--accent2)">→ tap for details</span>
+          </div>
+          ${data ? `<div style="margin-top:10px;font-size:11px;color:var(--text3);line-height:1.6">
+            <span style="color:${data.todayAvailable ? 'var(--accent)' : 'var(--warn)'}">● ${data.todayAvailable ? 'Completable today' : 'Check availability'}</span><br>
+            Docs needed: ${data.docs.length} · Bypasses: ${data.bypasses.length}
+          </div>` : ''}
+        </div>`;
+      }).join('');
+    }
+    addBtn.textContent = `+ add task on ${selectedCalDay} ${monthNames[calViewMonth]}`;
+    addBtn.onclick = () => {
+      const dateStr = `${calViewYear}-${String(calViewMonth+1).padStart(2,'0')}-${String(selectedCalDay).padStart(2,'0')}`;
+      openAddModalWithDate(dateStr);
+    };
+  } else {
+    // Show upcoming tasks
+    label.textContent = 'Upcoming Tasks';
+    const sorted = [...userTasks].sort((a, b) => new Date(a.date) - new Date(b.date));
+    ul.innerHTML = sorted.slice(0, 5).map(t => {
+      const d = new Date(t.date + 'T00:00:00');
+      const diff = Math.ceil((d - now) / 86400000);
+      const urgency = diff <= 2 ? 'urgent' : diff <= 5 ? 'warn' : '';
+      const dateStr = diff === 0 ? 'TODAY' : diff < 0 ? `${Math.abs(diff)}d ago` : `in ${diff}d`;
+      return `<div class="task-card ${urgency}" onclick="openDetail('${t.dataKey || 'search:' + t.name}')">
+        <div class="task-card-name">${t.name}</div>
+        <div class="task-card-meta">
+          <span>${t.category}</span>
+          <span class="task-card-date ${urgency}">${dateStr}</span>
+        </div>
+      </div>`;
+    }).join('');
+    addBtn.textContent = '+ add task';
+    addBtn.onclick = openAddModal;
+  }
+}
+
+// ====== TASKS GRID ======
+function renderTasksGrid() {
+  const now = new Date();
+  const grid = document.getElementById('tasks-grid');
+  grid.innerHTML = userTasks.map(t => {
+    const data = TASK_DATA[t.dataKey];
+    const d = new Date(t.date + 'T00:00:00');
+    const diff = Math.ceil((d - now) / 86400000);
+    const diffStr = diff === 0 ? 'Due today' : diff < 0 ? `${Math.abs(diff)}d overdue` : `Due in ${diff}d`;
+    const chips = data ? [
+      data.todayAvailable ? 'Available today' : 'Check availability',
+      data.recentChange?.hasChange ? 'Updated' : 'No changes'
+    ] : [];
+    const chipColors = [data?.todayAvailable ? 'green' : 'orange', data?.recentChange?.hasChange ? 'orange' : 'green'];
+    const chipsHtml = chips.map((c, i) => `<span class="chip ${chipColors[i]}">${c}</span>`).join('');
+    return `<div class="task-tile" onclick="openDetail('${t.dataKey || 'search:' + t.name}')">
+      ${data?.recentChange?.hasChange ? '<div class="change-badge">UPDATED</div>' : ''}
+      <div class="task-tile-tag">${t.category}</div>
+      <div class="task-tile-name">${t.name}</div>
+      <div class="task-tile-chips">${chipsHtml}</div>
+      <div class="task-tile-date"><strong>${diffStr}</strong> &mdash; ${new Date(t.date + 'T00:00:00').toLocaleDateString('en-IN', {day:'numeric', month:'short'})}</div>
+    </div>`;
+  }).join('');
+}
+
+// ====== DETAIL VIEW ======
+function openDetail(dataKey) {
+  showView('detail');
+  const container = document.getElementById('detail-content');
+
+  if (!dataKey || dataKey.startsWith('search:')) {
+    const name = dataKey ? dataKey.replace('search:', '') : 'this task';
+    container.innerHTML = `<div class="detail-title" style="font-size:32px">${name}</div>
+      <div class="detail-subtitle" style="margin-top:16px">Loading info from PILOT...</div>`;
+    fetchAITaskDetail(name, container);
+    return;
+  }
+
+  const data = TASK_DATA[dataKey];
+  if (!data) { fetchAITaskDetail(dataKey, container); return; }
+
+  currentDetailTask = data;
+
+  container.innerHTML = `
+    <div class="detail-header">
+      <div>
+        <div class="detail-title">${data.name}</div>
+        <div class="detail-subtitle">${data.description}</div>
+        <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+          <div class="today-available">
+            <div class="today-dot" style="background:${data.todayAvailable ? 'var(--accent)' : 'var(--danger)'}"></div>
+            <span style="color:${data.todayAvailable ? 'var(--accent)' : 'var(--danger)'}">
+              ${data.todayAvailable ? 'Completable today' : 'Check availability'}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="detail-meta-box">
+        <div class="detail-meta-row">
+          <span class="detail-meta-label">Category</span>
+          <span class="detail-meta-val">${data.tag}</span>
+        </div>
+        <div class="detail-meta-row">
+          <span class="detail-meta-label">Recent Changes</span>
+          <span class="detail-meta-val ${data.recentChange.hasChange ? 'orange' : 'green'}">${data.recentChange.hasChange ? 'Yes' : 'None'}</span>
+        </div>
+        <div class="detail-meta-row">
+          <span class="detail-meta-label">Locations</span>
+          <span class="detail-meta-val">${data.locations.length} available</span>
+        </div>
+        <div class="detail-meta-row">
+          <span class="detail-meta-label">Bypasses</span>
+          <span class="detail-meta-val">${data.bypasses.length} options</span>
+        </div>
+      </div>
+    </div>
+
+    ${data.recentChange.hasChange ? `
+    <div class="change-alert">
+      <div class="change-alert-header">⚠ Recent Update — ${data.recentChange.summary}</div>
+      <div class="change-alert-body">${data.recentChange.detail}<br><br><strong>What to do:</strong> ${data.recentChange.actionNeeded}</div>
+    </div>` : ''}
+
+    <div class="detail-sections">
+      <div class="detail-section full">
+        <div class="section-label">Process — Step by Step</div>
+        ${data.steps.map((s, i) => `
+          <div class="step">
+            <div class="step-num">0${i+1}</div>
+            <div class="step-body">
+              <div class="step-title">${s.title}</div>
+              <div class="step-desc">${s.desc}</div>
+              <span class="step-diff ${s.diff}">${s.diff.toUpperCase()}</span>
+            </div>
+          </div>`).join('')}
+      </div>
+
+      <div class="detail-section">
+        <div class="section-label">Documents Needed</div>
+        ${data.docs.map((d, i) => `
+          <div class="doc-item" id="doc-${dataKey}-${i}" onclick="toggleDoc('doc-${dataKey}-${i}')">
+            <div class="doc-check">✓</div>
+            <span>${d}</span>
+          </div>`).join('')}
+      </div>
+
+      <div class="detail-section">
+        <div class="section-label">Where to Go</div>
+        ${data.locations.map(l => `
+          <div class="location-item">
+            <div class="location-name">${l.name}</div>
+            <div class="location-addr">${l.addr}</div>
+            <span class="location-status ${l.status}">${l.status.toUpperCase()}</span>
+          </div>`).join('')}
+      </div>
+
+      <div class="detail-section">
+        <div class="section-label">Bypass Options</div>
+        ${data.bypasses.map(b => `
+          <div class="bypass-item"><strong>${b.label}</strong> — ${b.desc}</div>`).join('')}
+      </div>
+
+      <div class="detail-section">
+        <div class="section-label">If It Doesn't Work</div>
+        ${data.failure.map(f => `
+          <div class="failure-step">
+            <span class="failure-arrow">→</span>
+            <span>${f}</span>
+          </div>`).join('')}
+      </div>
+
+      <div class="detail-section" id="history-section-${dataKey}">
+        <div class="section-label">Task History</div>
+        <div id="history-list-${dataKey}">
+          ${renderHistoryList(dataKey)}
+        </div>
+        <button class="add-task-btn" style="margin-top:12px" onclick="logHistory('${dataKey}')">+ log attempt</button>
+      </div>
+    </div>`;
+}
+
+function renderHistoryList(key) {
+  const data = TASK_DATA[key];
+  if (!data) return '';
+  return data.history.length === 0
+    ? '<div style="color:var(--text3);font-size:12px">No history yet. Your attempts will appear here.</div>'
+    : data.history.map(h => `
+      <div class="history-item">
+        <span class="history-date">${h.date}</span>
+        <span class="history-note">${h.note}</span>
+        <span class="history-outcome ${h.success ? 'success' : 'fail'}">${h.success ? '✓' : '✗'}</span>
+      </div>`).join('');
+}
+
+function toggleDoc(id) {
+  document.getElementById(id).classList.toggle('checked');
+}
+
+function logHistory(key) {
+  const note = prompt("What happened? Describe your attempt:");
+  if (!note) return;
+  const success = confirm("Was it successful?");
+  if (!TASK_DATA[key]) return;
+  TASK_DATA[key].history.unshift({ date: new Date().toLocaleDateString('en-IN'), note, success });
+  // Refresh just the history section without re-rendering everything
+  const listEl = document.getElementById('history-list-' + key);
+  if (listEl) listEl.innerHTML = renderHistoryList(key);
+}
+
+// ====== ADD TASK ======
+function openAddModal() {
+  document.getElementById('new-task-date').value = '';
+  document.getElementById('add-modal').classList.add('open');
+}
+function openAddModalWithDate(dateStr) {
+  document.getElementById('new-task-date').value = dateStr;
+  document.getElementById('add-modal').classList.add('open');
+}
+function closeAddModal() { document.getElementById('add-modal').classList.remove('open'); }
+
+function addTask() {
+  const name = document.getElementById('new-task-name').value.trim();
+  const date = document.getElementById('new-task-date').value;
+  const cat = document.getElementById('new-task-cat').value;
+  if (!name || !date) return;
+
+  const keyMap = { 'ration': 'ration', 'lpg': 'lpg', 'aadhaar': 'aadhaar', 'water': 'water', 'railway': 'railway', 'train': 'railway' };
+  let dataKey = null;
+  for (const [k, v] of Object.entries(keyMap)) {
+    if (name.toLowerCase().includes(k)) { dataKey = v; break; }
+  }
+
+  userTasks.push({ id: 'u' + Date.now(), name, date, category: cat, dataKey });
+  closeAddModal();
+  renderTasksGrid();
+  renderCalendar();
+  document.getElementById('new-task-name').value = '';
+  document.getElementById('new-task-date').value = '';
+}
+
+// Voice-triggered task add (no confirm needed)
+function addTaskVoice(name, dateStr, cat) {
+  const keyMap = { 'ration': 'ration', 'lpg': 'lpg', 'aadhaar': 'aadhaar', 'water': 'water', 'railway': 'railway', 'train': 'railway' };
+  let dataKey = null;
+  for (const [k, v] of Object.entries(keyMap)) {
+    if (name.toLowerCase().includes(k)) { dataKey = v; break; }
+  }
+  userTasks.push({ id: 'u' + Date.now(), name, date: dateStr, category: cat || 'Other', dataKey });
+  renderTasksGrid();
+  renderCalendar();
+}
+
+// ====== AI SEARCH — renders as task card ======
+async function aiSearch() {
+  const query = document.getElementById('ai-search-input').value.trim();
+  if (!query) return;
+
+  const box = document.getElementById('ai-result-box');
+  const content = document.getElementById('ai-result-content');
+  box.classList.add('show');
+  content.innerHTML = '<div class="ai-loading">PILOT is thinking...</div>';
+
+  const preloadedSummary = Object.values(TASK_DATA).map(d => `${d.name}: ${d.description} Steps: ${d.steps.map(s=>s.title).join(', ')}`).join('\n');
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1200,
+        system: `You are PILOT, a government task navigator for Indian citizens. The user asked about a task or process. Respond ONLY as a JSON object (no markdown, no backticks) with this exact structure:
+{
+  "name": "Task name",
+  "tag": "Category · Subcategory",
+  "todayAvailable": true,
+  "description": "One sentence description",
+  "steps": [{"title": "Step title", "desc": "Detail", "diff": "easy|medium|hard"}],
+  "docs": ["doc1", "doc2"],
+  "locations": [{"name": "Place name", "addr": "Address or URL", "status": "open|busy|closed"}],
+  "bypasses": [{"label": "Option", "desc": "How to use it"}],
+  "failure": ["What to do if X fails"],
+  "recentChange": {"hasChange": false, "summary": null, "detail": null, "actionNeeded": null}
+}
+If you truly don't know this process, respond with: {"error": "Sorry, I can't find that process."}
+Pre-loaded tasks for reference: ${preloadedSummary}`,
+        messages: [{ role: "user", content: query }]
+      })
+    });
+
+    const data = await res.json();
+    const raw = data.content?.map(b => b.text || '').join('') || '{"error":"Sorry, I can\'t find that process."}';
+
+    let parsed;
+    try { parsed = JSON.parse(raw.replace(/```json|```/g, '').trim()); }
+    catch { parsed = { error: "Sorry, I can't find that process." }; }
+
+    if (parsed.error) {
+      content.innerHTML = `<div style="color:var(--text2);font-size:13px">${parsed.error}</div>`;
+      speak(parsed.error);
+      return;
+    }
+
+    // Store in TASK_DATA temporarily so openDetail works
+    const tempKey = 'ai_' + Date.now();
+    TASK_DATA[tempKey] = { ...parsed, id: tempKey, history: [] };
+
+    // Render as a clickable task card
+    const chips = [
+      parsed.todayAvailable ? 'Available today' : 'Check availability',
+      parsed.recentChange?.hasChange ? 'Updated' : 'No changes'
+    ];
+    const chipColors = [parsed.todayAvailable ? 'green' : 'orange', parsed.recentChange?.hasChange ? 'orange' : 'green'];
+    const chipsHtml = chips.map((c, i) => `<span class="chip ${chipColors[i]}">${c}</span>`).join('');
+
+    content.innerHTML = `
+      <div style="font-size:9px;letter-spacing:2px;color:var(--text3);margin-bottom:12px">PILOT FOUND — click to view full detail</div>
+      <div class="task-tile" style="margin:0" onclick="openDetail('${tempKey}')">
+        ${parsed.recentChange?.hasChange ? '<div class="change-badge">UPDATED</div>' : ''}
+        <div class="task-tile-tag">${parsed.tag || 'General'}</div>
+        <div class="task-tile-name">${parsed.name}</div>
+        <div class="task-tile-chips">${chipsHtml}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:8px;line-height:1.6">${parsed.description}</div>
+        <div style="margin-top:12px;font-size:11px;color:var(--text3)">${parsed.steps?.length || 0} steps · ${parsed.docs?.length || 0} docs needed · ${parsed.locations?.length || 0} locations</div>
+      </div>`;
+
+    speak(`Found info on ${parsed.name}. Tap the card to see the full process.`);
+  } catch (e) {
+    content.innerHTML = `<div style="color:var(--danger);font-size:12px">PILOT couldn't connect. Check your network.</div>`;
+  }
+}
+
+async function fetchAITaskDetail(taskName, container) {
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1200,
+        system: `You are PILOT, a government and utility process navigator for Indian citizens. 
+The user wants detailed information about a task or civic process in India.
+You MUST respond with ONLY a valid JSON object — no markdown, no backticks, no explanation text before or after.
+You know about ALL common Indian utility and government tasks: electricity bill payment, water bill, LPG booking, ration collection, Aadhaar update, PAN card, train ticket, hospital appointment, passport, driving licence, property tax, GST, income tax — everything.
+NEVER return an error for any common utility or government task. Always generate a helpful structured response.
+Return this exact JSON structure:
+{
+  "name": "Full task name",
+  "tag": "Category · Subcategory",
+  "todayAvailable": true,
+  "description": "One clear sentence describing what this task is",
+  "steps": [{"title": "Step title", "desc": "Detailed description of this step", "diff": "easy|medium|hard"}],
+  "docs": ["Document or info needed 1", "Document 2"],
+  "locations": [{"name": "Where to go or platform name", "addr": "Address or URL", "status": "open|busy|closed"}],
+  "bypasses": [{"label": "Alternative option label", "desc": "How to use this alternative"}],
+  "failure": ["What to do if step X fails or system rejects you"],
+  "recentChange": {"hasChange": false, "summary": null, "detail": null, "actionNeeded": null}
+}
+Only return {"error": "..."} if the task is completely unrecognisable and not related to any Indian civic or utility process.`,
+        messages: [{ role: "user", content: `Give me full process details for: ${taskName}` }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content?.map(b => b.text || '').join('') || '{"error":"Could not load process."}';
+    let parsed;
+    try { parsed = JSON.parse(raw.replace(/```json|```/g, '').trim()); }
+    catch { parsed = { error: "Could not parse response." }; }
+
+    if (parsed.error) {
+      container.innerHTML = `<div class="detail-title" style="font-size:32px">${taskName}</div>
+        <div style="color:var(--text2);margin-top:24px;font-size:14px">${parsed.error}</div>`;
+      return;
+    }
+
+    const tempKey = 'ai_' + Date.now();
+    TASK_DATA[tempKey] = { ...parsed, id: tempKey, history: [] };
+    openDetail(tempKey);
+  } catch (e) {
+    container.innerHTML += `<div style="color:var(--danger);font-size:12px;margin-top:16px">PILOT couldn't connect. Check your internet.</div>`;
+  }
+}
+
+// ====== VOICE / WAKE WORD ======
+let recognition = null;
+let isListening = false;
+let isSpeaking = false;
+let voiceEnabled = false;
+let restartTimer = null;
+
+// Tooltip hover — attached via JS so it doesn't interfere with button clicks
+const micBtn = document.getElementById('pilot-mic-btn');
+const micTooltip = document.getElementById('mic-tooltip');
+micBtn.addEventListener('mouseenter', () => { micTooltip.style.display = 'block'; });
+micBtn.addEventListener('mouseleave', () => { micTooltip.style.display = 'none'; });
+
+function initVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    setPilotStatus('voice not supported', false);
+    return false;
+  }
+
+  // Tear down any existing instance cleanly
+  if (recognition) {
+    try { recognition.abort(); } catch(e) {}
+    recognition = null;
+  }
+
+  recognition = new SR();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = 'en-IN';
+  recognition.maxAlternatives = 3;
+
+  recognition.onstart = () => {
+    isListening = true;
+    setPilotStatus('listening', true);
+    micBtn.classList.add('active');
+  };
+
+  recognition.onresult = (e) => {
+    let bestTranscript = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const result = e.results[i];
+      for (let j = 0; j < result.length; j++) {
+        const t = result[j].transcript.trim().toLowerCase();
+        if (t.includes('pilot')) { bestTranscript = t; break; }
+      }
+      if (!bestTranscript) bestTranscript = result[0].transcript.trim().toLowerCase();
+
+      const tb = document.getElementById('transcript-box');
+      tb.textContent = bestTranscript;
+      tb.classList.add('show');
+
+      if (result.isFinal) {
+        tb.classList.remove('show');
+        if (bestTranscript.includes('pilot')) {
+          const command = bestTranscript
+            .replace(/hey pilot|hi pilot|okay pilot|ok pilot|hey,\s*pilot/g, '')
+            .trim();
+          if (command.length > 1) processVoiceCommand(command);
+          else speak("Yes? What would you like to know?");
+        }
+      }
+    }
+  };
+
+  recognition.onend = () => {
+    isListening = false;
+    if (voiceEnabled) {
+      restartTimer = setTimeout(() => {
+        if (voiceEnabled && recognition) {
+          try { recognition.start(); }
+          catch(e) { initVoice(); try { recognition.start(); } catch(e2){} }
+        }
+      }, 400);
+    } else {
+      micBtn.classList.remove('active');
+      setPilotStatus('say "hey pilot"', false);
+    }
+  };
+
+  recognition.onerror = (e) => {
+    isListening = false;
+    if (e.error === 'not-allowed') {
+      setPilotStatus('mic blocked — allow in browser', false);
+      voiceEnabled = false;
+      micBtn.classList.remove('active');
+      return;
+    }
+    if (e.error === 'no-speech' || e.error === 'audio-capture' || e.error === 'network') {
+      if (voiceEnabled) setTimeout(() => {
+        if (voiceEnabled) try { recognition.start(); } catch(e2) { initVoice(); }
+      }, 600);
+    }
+  };
+
+  return true;
+}
+
+function toggleVoice() {
+  // Show immediate visual feedback so user knows click registered
+  micBtn.style.opacity = '0.6';
+  setTimeout(() => { micBtn.style.opacity = '1'; }, 150);
+
+  if (!voiceEnabled) {
+    const ok = initVoice();
+    if (!ok) return;
+    voiceEnabled = true;
+    micBtn.classList.add('active');
+    setPilotStatus('starting mic...', false);
+    try {
+      recognition.start();
+    } catch(e) {
+      // Already started or permission issue
+      setPilotStatus('tap again if mic not starting', false);
+    }
+  } else {
+    voiceEnabled = false;
+    if (restartTimer) clearTimeout(restartTimer);
+    if (recognition) { try { recognition.abort(); } catch(e) {} recognition = null; }
+    micBtn.classList.remove('active');
+    setPilotStatus('say "hey pilot"', false);
+    document.getElementById('transcript-box').classList.remove('show');
+  }
+}
+
+function setPilotStatus(label, listening, speaking, thinking) {
+  document.getElementById('pilot-label').textContent = label;
+  const dot = document.getElementById('pilot-dot');
+  dot.className = 'pilot-dot';
+  if (listening) dot.classList.add('listening');
+  if (speaking) dot.classList.add('speaking');
+  if (thinking) dot.classList.add('thinking');
+}
+
+// Parse dates from voice like "23rd May", "May 5th", "tomorrow", "next Monday"
+function parseDateFromVoice(text) {
+  const now = new Date();
+  const months = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+  const shortMonths = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+
+  // "tomorrow"
+  if (text.includes('tomorrow')) {
+    const d = new Date(now); d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  }
+
+  // "next [weekday]"
+  const weekdays = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  for (let i = 0; i < weekdays.length; i++) {
+    if (text.includes(weekdays[i])) {
+      const d = new Date(now);
+      const diff = (i - d.getDay() + 7) % 7 || 7;
+      d.setDate(d.getDate() + diff);
+      return d.toISOString().split('T')[0];
+    }
+  }
+
+  // "23rd May 2026" / "May 23" / "23 may" / "5th of june"
+  const numMatch = text.match(/(\d{1,2})\s*(?:st|nd|rd|th)?\s*(?:of\s+)?([a-z]+)/);
+  const numMatch2 = text.match(/([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?/);
+
+  let day, monthStr;
+  if (numMatch) { day = parseInt(numMatch[1]); monthStr = numMatch[2]; }
+  else if (numMatch2) { monthStr = numMatch2[1]; day = parseInt(numMatch2[2]); }
+
+  if (day && monthStr) {
+    let monthIdx = months.indexOf(monthStr);
+    if (monthIdx === -1) monthIdx = shortMonths.indexOf(monthStr.slice(0,3));
+    if (monthIdx !== -1 && day >= 1 && day <= 31) {
+      const year = now.getMonth() > monthIdx ? now.getFullYear() + 1 : now.getFullYear();
+      return `${year}-${String(monthIdx+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    }
+  }
+
+  return null;
+}
+
+async function processVoiceCommand(command) {
+  setPilotStatus('thinking...', false, false, true);
+  showPilotBubble("Heard: " + command);
+
+  const lower = command.toLowerCase();
+
+  // Navigation
+  if (lower.includes('calendar')) { showView('calendar'); speak("Opening calendar."); return; }
+  if (lower.includes('all tasks') || lower.includes('task list')) { showView('tasks'); speak("Here are all your tasks."); return; }
+
+  // ADD TASK by voice — "add electricity bill on 23rd may" / "set water bill for 5th june"
+  const addMatch = lower.match(/(?:add|set|create|schedule|remind)\s+(.+?)(?:\s+(?:on|for|at|by)\s+(.+))?$/);
+  if (addMatch) {
+    const taskName = addMatch[1]?.replace(/\s+(?:on|for|at|by)\s+.+$/, '').trim();
+    const datePart = addMatch[2] || lower;
+    const dateStr = parseDateFromVoice(datePart);
+
+    if (taskName && taskName.length > 1 && dateStr) {
+      // Guess category
+      const catMap = [['ration','lpg','aadhaar','election','government','passport','visa','tax','gst','pan'], 
+                      ['water','electricity','electric','bill','gas','internet'], 
+                      ['train','bus','flight','ticket','travel']];
+      const catNames = ['Government','Utility','Transport'];
+      let cat = 'Other';
+      for (let i = 0; i < catMap.length; i++) {
+        if (catMap[i].some(k => taskName.includes(k))) { cat = catNames[i]; break; }
+      }
+      const displayDate = new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', {day:'numeric', month:'short'});
+      addTaskVoice(taskName.replace(/\b\w/g, c => c.toUpperCase()), dateStr, cat);
+      speak(`Done. I've added ${taskName} on ${displayDate}.`);
+      showPilotBubble(`✓ Added: ${taskName.replace(/\b\w/g, c => c.toUpperCase())} on ${displayDate}`);
+      return;
+    }
+    if (taskName && taskName.length > 1 && !dateStr) {
+      speak(`I need a date for that task. Please say something like — add ${taskName} on 5th May.`);
+      return;
+    }
+  }
+
+  // Open specific task
+  for (const key of Object.keys(TASK_DATA)) {
+    if (TASK_DATA[key].name && lower.includes(TASK_DATA[key].name.toLowerCase().split(' ')[0])) {
+      if (lower.match(/open|show|detail|tell me about|info/)) {
+        openDetail(key);
+        speak(`Opening ${TASK_DATA[key].name}.`);
+        return;
+      }
+    }
+  }
+
+  // AI answer
+  const preloadedSummary = Object.values(TASK_DATA).filter(d => d.name).map(d => `${d.name}: ${d.description || ''}`).join('\n');
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 400,
+        system: `You are PILOT, a voice assistant for a government task navigator for Indian citizens. Give short spoken-word answers. No bullets or markdown. Max 3-4 sentences. If genuinely unknown: "Sorry, I can't find that process." Pre-loaded tasks: ${preloadedSummary}`,
+        messages: [{ role: "user", content: command }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(b => b.text || '').join('') || "Sorry, I can't find that process.";
+    showPilotBubble(text);
+    speak(text);
+  } catch (e) {
+    showPilotBubble("Connection error. Check your internet.");
+    speak("I couldn't connect. Please check your internet.");
+  }
+}
+
+function showPilotBubble(text) {
+  const bubble = document.getElementById('pilot-bubble');
+  document.getElementById('pilot-bubble-text').textContent = text;
+  bubble.classList.add('show');
+  setTimeout(() => bubble.classList.remove('show'), 9000);
+}
+
+function speak(text) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  setPilotStatus('speaking...', false, true);
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'en-IN';
+  utterance.rate = 0.95;
+  utterance.pitch = 1;
+  utterance.onend = () => {
+    if (voiceEnabled) setPilotStatus('listening', true);
+    else setPilotStatus('say "hey pilot"', false);
+  };
+  window.speechSynthesis.speak(utterance);
+}
+
+// ====== INIT ======
+renderCalendar();
+renderTasksGrid();
+showView('calendar');
+// Voice does NOT auto-start — Chrome requires a user gesture (click) before mic access
+// User must click the mic button to enable voice
+
+</script>
+</body>
+</html>
