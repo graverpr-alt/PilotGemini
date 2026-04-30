@@ -1496,14 +1496,34 @@ async function aiSearch() {
   const preloadedSummary = Object.values(TASK_DATA).map(d => `${d.name}: ${d.description} Steps: ${d.steps.map(s=>s.title).join(', ')}`).join('\n');
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1200,
-        system: `You are PILOT, a government task navigator for Indian citizens. The user asked about a task or process. Respond ONLY as a JSON object (no markdown, no backticks) with this exact structure:
+    const res = await fetch("/.netlify/functions/gemini", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    prompt: `
+You are PILOT, a government task navigator for Indian citizens.
+
+Respond ONLY as valid JSON (no markdown, no explanation) in this exact format:
 {
+  "name": "Task name",
+  "tag": "Category · Subcategory",
+  "todayAvailable": true,
+  "description": "One sentence description",
+  "steps": [{"title": "Step title", "desc": "Detail", "diff": "easy|medium|hard"}],
+  "docs": ["doc1", "doc2"],
+  "locations": [{"name": "Place name", "addr": "Address or URL", "status": "open|busy|closed"}],
+  "bypasses": [{"label": "Option", "desc": "How to use it"}],
+  "failure": ["What to do if X fails"],
+  "recentChange": {"hasChange": false, "summary": null, "detail": null, "actionNeeded": null}
+}
+
+User query: ${query}
+    `
+  })
+});
+
+const data = await res.json();
+const raw = data.reply;{
   "name": "Task name",
   "tag": "Category · Subcategory",
   "todayAvailable": true,
@@ -1565,34 +1585,38 @@ Pre-loaded tasks for reference: ${preloadedSummary}`,
 
 async function fetchAITaskDetail(taskName, container) {
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1200,
-        system: `You are PILOT, a government and utility process navigator for Indian citizens. 
-The user wants detailed information about a task or civic process in India.
-You MUST respond with ONLY a valid JSON object — no markdown, no backticks, no explanation text before or after.
-You know about ALL common Indian utility and government tasks: electricity bill payment, water bill, LPG booking, ration collection, Aadhaar update, PAN card, train ticket, hospital appointment, passport, driving licence, property tax, GST, income tax — everything.
-NEVER return an error for any common utility or government task. Always generate a helpful structured response.
-Return this exact JSON structure:
+    const res = await fetch("/.netlify/functions/gemini", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    prompt: `
+You are PILOT, a government and utility process navigator for Indian citizens.
+
+You MUST respond with ONLY a valid JSON object — no markdown, no backticks, no explanation.
+
+You know about ALL Indian civic tasks: electricity bill, water bill, LPG, Aadhaar, PAN, passport, driving licence, GST, income tax, etc.
+
+Return EXACTLY this structure:
 {
   "name": "Full task name",
   "tag": "Category · Subcategory",
   "todayAvailable": true,
-  "description": "One clear sentence describing what this task is",
-  "steps": [{"title": "Step title", "desc": "Detailed description of this step", "diff": "easy|medium|hard"}],
-  "docs": ["Document or info needed 1", "Document 2"],
-  "locations": [{"name": "Where to go or platform name", "addr": "Address or URL", "status": "open|busy|closed"}],
-  "bypasses": [{"label": "Alternative option label", "desc": "How to use this alternative"}],
-  "failure": ["What to do if step X fails or system rejects you"],
+  "description": "One clear sentence",
+  "steps": [{"title": "Step title", "desc": "Detailed description", "diff": "easy|medium|hard"}],
+  "docs": ["Document 1", "Document 2"],
+  "locations": [{"name": "Place or platform", "addr": "Address or URL", "status": "open|busy|closed"}],
+  "bypasses": [{"label": "Option", "desc": "How to use it"}],
+  "failure": ["What to do if something fails"],
   "recentChange": {"hasChange": false, "summary": null, "detail": null, "actionNeeded": null}
 }
-Only return {"error": "..."} if the task is completely unrecognisable and not related to any Indian civic or utility process.`,
-        messages: [{ role: "user", content: `Give me full process details for: ${taskName}` }]
-      })
-    });
+
+Task: ${taskName}
+    `
+  })
+});
+
+const data = await res.json();
+const raw = data.reply || '{"error":"No response"}';
     const data = await res.json();
     const raw = data.content?.map(b => b.text || '').join('') || '{"error":"Could not load process."}';
     let parsed;
@@ -1843,18 +1867,26 @@ async function processVoiceCommand(command) {
   // AI answer
   const preloadedSummary = Object.values(TASK_DATA).filter(d => d.name).map(d => `${d.name}: ${d.description || ''}`).join('\n');
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 400,
-        system: `You are PILOT, a voice assistant for a government task navigator for Indian citizens. Give short spoken-word answers. No bullets or markdown. Max 3-4 sentences. If genuinely unknown: "Sorry, I can't find that process." Pre-loaded tasks: ${preloadedSummary}`,
-        messages: [{ role: "user", content: command }]
-      })
-    });
-    const data = await res.json();
-    const text = data.content?.map(b => b.text || '').join('') || "Sorry, I can't find that process.";
+ const res = await fetch("/.netlify/functions/gemini", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    prompt: `
+You are PILOT, a voice assistant for a government task navigator for Indian citizens.
+
+Give short spoken-word answers (no bullets, no markdown).
+Max 3–4 sentences.
+If genuinely unknown, say: "Sorry, I can't find that process."
+
+Preloaded tasks: ${preloadedSummary}
+
+User command: ${command}
+    `
+  })
+});
+
+const data = await res.json();
+const text = data.reply || "Sorry, I can't find that process.";
     showPilotBubble(text);
     speak(text);
   } catch (e) {
